@@ -1,13 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
-/**
- *
- * @author hp
- */
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
@@ -101,6 +91,9 @@ public class SalarySlip extends JFrame implements ActionListener {
             String designation = designationField.getText();
             String month = (String) monthComboBox.getSelectedItem();
 
+            // Log input for debugging
+            System.out.println("Searching for employee: " + employeeName + " with designation: " + designation);
+
             // Load employee data from database
             Employee employee = loadEmployeeData(employeeName, designation, month);
 
@@ -112,7 +105,7 @@ public class SalarySlip extends JFrame implements ActionListener {
                 // Display salary slip in a dialog
                 JOptionPane.showMessageDialog(this, salarySlip, "Salary Slip", JOptionPane.INFORMATION_MESSAGE);
             } else {
-                JOptionPane.showMessageDialog(this, "Employee not found!");
+                JOptionPane.showMessageDialog(this, "Employee not found or data is incomplete!");
             }
         }
     }
@@ -120,21 +113,34 @@ public class SalarySlip extends JFrame implements ActionListener {
     private Employee loadEmployeeData(String employeeName, String designation, String month) {
         try (Connection conn = DriverManager.getConnection(dbURL, dbUser, dbPassword);
              PreparedStatement stmt = conn.prepareStatement(
-                 "SELECT * FROM users WHERE username = ? AND role = ?")) {
+                 "SELECT * FROM employees WHERE LOWER(name) = LOWER(?) AND LOWER(role) = LOWER(?)")) {
 
             stmt.setString(1, employeeName);
             stmt.setString(2, designation);
+
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     int employeeId = rs.getInt("id");
-                    double basicSalary = rs.getDouble("basic_salary");
+                    double basicPay = rs.getDouble("basic_pay");
                     double allowance = rs.getDouble("allowance");
                     double deduction = rs.getDouble("deduction");
 
-                    return new Employee(employeeId, employeeName, designation, basicSalary, allowance, deduction, month);
+                    // If basic pay is zero or missing, handle it
+                    if (basicPay <= 0) {
+                        // Log the issue and set a default value for basic pay
+                        System.out.println("Basic pay is zero or missing for " + employeeName);
+                        basicPay = 30000; // Set a default value for basic pay
+                        System.out.println("Default basic pay set to: " + basicPay);
+                    }
+
+                    return new Employee(employeeId, employeeName, designation, basicPay, allowance, deduction, month);
+                } else {
+                    // Log error if no employee found
+                    System.out.println("No employee found with the given name and designation.");
                 }
             }
         } catch (SQLException e) {
+            e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Error loading employee data: " + e.getMessage());
         }
 
@@ -223,3 +229,16 @@ public class SalarySlip extends JFrame implements ActionListener {
         SwingUtilities.invokeLater(() -> new SalarySlip());
     }
 }
+
+    
+        
+        
+
+       
+
+
+    
+           
+       
+
+      
