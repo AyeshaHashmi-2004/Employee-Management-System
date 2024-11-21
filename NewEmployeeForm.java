@@ -19,7 +19,7 @@ public class NewEmployeeForm extends JFrame {
     private JPasswordField passwordField;
     private JButton submitButton, updateButton, deleteButton;
 
-    private static final String DB_URL = "jdbc:mysql://localhost:3306/employee management system"; // Updated DB name format
+    private static final String DB_URL = "jdbc:mysql://localhost:3306/employee management system"; // Ensure the DB name is correct
     private static final String DB_USER = "root";
     private static final String DB_PASSWORD = ""; // Replace with your actual MySQL password
 
@@ -155,7 +155,7 @@ public class NewEmployeeForm extends JFrame {
         String password = new String(passwordField.getPassword());
 
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
-            String sql = "UPDATE employees SET name = ?, role = ?, email = ?, password = ? WHERE employee_id = ?";
+            String sql = "UPDATE employees SET name = ?, role = ?, email = ?, password = ? WHERE id = ?";
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                 pstmt.setString(1, employeeName);
                 pstmt.setString(2, role);
