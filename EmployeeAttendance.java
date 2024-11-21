@@ -26,13 +26,26 @@ public class EmployeeAttendance extends JFrame implements ActionListener {
     private ButtonGroup attendanceGroup;
     private int currentEmployeeId; // Store the current employee ID for updates
 
-    public EmployeeAttendance(int employeeId) {
+    public EmployeeAttendance() {
         super("Employee Attendance");
-        currentEmployeeId = employeeId; // Initialize the employee ID
+
+        // Prompt user for Employee ID
+        String inputId = JOptionPane.showInputDialog(this, "Enter Employee ID:", "Input", JOptionPane.QUESTION_MESSAGE);
+        if (inputId == null || inputId.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Employee ID is required. Exiting program.");
+            System.exit(0);
+        }
+        try {
+            currentEmployeeId = Integer.parseInt(inputId);
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Invalid Employee ID format. Exiting program.");
+            System.exit(0);
+        }
+
+        // Set up frame
         setSize(500, 500);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new GridBagLayout());
-
         setResizable(false);
         getContentPane().setBackground(new Color(135, 206, 235));
 
@@ -40,10 +53,10 @@ public class EmployeeAttendance extends JFrame implements ActionListener {
         gbc.insets = new Insets(10, 10, 10, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
+        // Title
         titleLabel = new JLabel("Manage Employee Attendance", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 20));
         titleLabel.setForeground(new Color(25, 25, 112));
-
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 2;
@@ -51,20 +64,23 @@ public class EmployeeAttendance extends JFrame implements ActionListener {
 
         gbc.gridwidth = 1;
 
+        // Name field
         nameLabel = new JLabel("Employee Name:");
         nameLabel.setFont(new Font("Arial", Font.BOLD, 14));
         nameField = createStyledTextField();
+        nameField.setEditable(false); // Make it read-only
         addComponent(gbc, nameLabel, nameField, 1);
 
+        // Basic pay field
         basicPayLabel = new JLabel("Basic Pay:");
         basicPayLabel.setFont(new Font("Arial", Font.BOLD, 14));
         basicPayField = createStyledTextField();
-        basicPayField.setBackground(Color.WHITE); // Make writable
+        basicPayField.setEditable(false); // Make it read-only
         addComponent(gbc, basicPayLabel, basicPayField, 2);
 
+        // Attendance options
         attendanceLabel = new JLabel("Attendance:");
         attendanceLabel.setFont(new Font("Arial", Font.BOLD, 14));
-
         gbc.gridy = 3;
         gbc.gridx = 0;
         gbc.anchor = GridBagConstraints.WEST;
@@ -90,22 +106,26 @@ public class EmployeeAttendance extends JFrame implements ActionListener {
         attendancePanel.add(holidayButton);
         add(attendancePanel, gbc);
 
+        // Advance field
         JLabel advanceLabel = new JLabel("Advance:");
         advanceLabel.setFont(new Font("Arial", Font.BOLD, 14));
         advanceField = createStyledTextField();
         addComponent(gbc, advanceLabel, advanceField, 4);
 
+        // Bonus field
         JLabel bonusLabel = new JLabel("Bonus:");
         bonusLabel.setFont(new Font("Arial", Font.BOLD, 14));
         bonusField = createStyledTextField();
         addComponent(gbc, bonusLabel, bonusField, 5);
 
+        // Today's payment field
         todayPaymentLabel = new JLabel("Today's Payment:");
         todayPaymentLabel.setFont(new Font("Arial", Font.BOLD, 14));
         todayPaymentField = createStyledTextField();
-        todayPaymentField.setBackground(Color.WHITE); // Make writable
+        todayPaymentField.setEditable(false); // Make it read-only
         addComponent(gbc, todayPaymentLabel, todayPaymentField, 6);
 
+        // Submit button
         submitButton = new JButton("Submit");
         submitButton.setFont(new Font("Arial", Font.BOLD, 12));
         submitButton.setBackground(new Color(255, 105, 180)); // Dark pink color
@@ -113,14 +133,13 @@ public class EmployeeAttendance extends JFrame implements ActionListener {
         submitButton.setFocusPainted(false);
         submitButton.addActionListener(this);
 
-        // Centering the submit button in the grid
         gbc.gridy = 7;
         gbc.gridx = 0;
         gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.CENTER;
         add(submitButton, gbc);
 
-        // Load employee data from database
+        // Load employee data
         loadEmployeeData();
 
         setVisible(true);
@@ -152,34 +171,37 @@ public class EmployeeAttendance extends JFrame implements ActionListener {
     }
 
     private void loadEmployeeData() {
-        // Remove LIMIT 1 and query for specific employee data
-        String query = "SELECT * FROM employees WHERE id = ?";  // Assuming you have an employee_id to query with
+        String query = "SELECT * FROM employees WHERE id = ?";
         try (Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
              PreparedStatement stmt = conn.prepareStatement(query)) {
 
-            // Use the current employee ID to fetch data
             stmt.setInt(1, currentEmployeeId);
-
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     nameField.setText(rs.getString("name"));
                     basicPayField.setText(String.valueOf(rs.getDouble("basic_pay")));
                 } else {
-                    JOptionPane.showMessageDialog(this, "No employee found with the provided ID.");
+                    JOptionPane.showMessageDialog(this, "No employee found with ID: " + currentEmployeeId);
+                    System.exit(0);
                 }
             }
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Error loading employee data: " + e.getMessage());
+            System.exit(0);
         }
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == submitButton) {
-            double todayPayment = calculateTodayPayment();
-            todayPaymentField.setText(String.format("%.2f", todayPayment));
-            updateAttendanceInDatabase(todayPayment);
-            JOptionPane.showMessageDialog(this, "Attendance submitted successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            try {
+                double todayPayment = calculateTodayPayment();
+                todayPaymentField.setText(String.format("%.2f", todayPayment));
+                updateAttendanceInDatabase(todayPayment);
+                JOptionPane.showMessageDialog(this, "Attendance submitted successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Please enter valid numeric values for Advance and Bonus.", "Input Error", JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
 
@@ -200,11 +222,6 @@ public class EmployeeAttendance extends JFrame implements ActionListener {
     }
 
     private void updateAttendanceInDatabase(double todayPayment) {
-        if (currentEmployeeId == 0) {
-            JOptionPane.showMessageDialog(this, "No employee ID set. Please load the employee data.");
-            return;
-        }
-
         String attendanceStatus = "Present";
         if (absentButton.isSelected()) {
             attendanceStatus = "Absent";
@@ -214,22 +231,26 @@ public class EmployeeAttendance extends JFrame implements ActionListener {
             attendanceStatus = "Holiday";
         }
 
-        String sql = "UPDATE attendance SET attendance_status = ?, today_payment = ? WHERE employee_id = ?";
+        String sql = "INSERT INTO attendance (employee_id, attendance_status, today_payment) VALUES (?, ?, ?) " +
+                     "ON DUPLICATE KEY UPDATE attendance_status = ?, today_payment = ?";
 
         try (Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, attendanceStatus);
-            pstmt.setDouble(2, todayPayment);
-            pstmt.setInt(3, currentEmployeeId);
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            pstmt.executeUpdate();
+            stmt.setInt(1, currentEmployeeId);
+            stmt.setString(2, attendanceStatus);
+            stmt.setDouble(3, todayPayment);
+            stmt.setString(4, attendanceStatus);
+            stmt.setDouble(5, todayPayment);
+
+            stmt.executeUpdate();
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Error updating attendance: " + e.getMessage());
+            JOptionPane.showMessageDialog(this, "Error updating attendance: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     public static void main(String[] args) {
-        // Pass employee ID when creating the EmployeeAttendance instance
-        SwingUtilities.invokeLater(() -> new EmployeeAttendance(1)); // Example with employee ID 1
+        SwingUtilities.invokeLater(EmployeeAttendance::new);
     }
 }
+
