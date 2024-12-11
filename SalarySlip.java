@@ -1,3 +1,4 @@
+import static com.sun.org.apache.xerces.internal.util.XMLChar.isValidName;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
@@ -91,6 +92,16 @@ public class SalarySlip extends JFrame implements ActionListener {
             String designation = designationField.getText();
             String month = (String) monthComboBox.getSelectedItem();
 
+            // Validate inputs
+            if (employeeName == null || employeeName.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Invalid Employee Name. Only alphabets and spaces are allowed (2-50 characters).", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            if (!isValidDesignation(designation)) {
+                JOptionPane.showMessageDialog(this, "Invalid Designation. Only alphabets, spaces, hyphens, and slashes are allowed (2-100 characters).", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
             // Log input for debugging
             System.out.println("Searching for employee: " + employeeName + " with designation: " + designation);
 
@@ -177,6 +188,10 @@ public class SalarySlip extends JFrame implements ActionListener {
         return salarySlip.toString();
     }
 
+    private boolean isValidDesignation(String designation) {
+        return designation != null && designation.matches("[A-Za-z\\s-\\/]{2,100}");
+    }
+
     private class Employee {
         private int id;
         private String name;
@@ -230,12 +245,15 @@ public class SalarySlip extends JFrame implements ActionListener {
     }
 }
 
-    
-        
-        
-
        
-
+       
+        
+             
+       
+         
+       
+        
+       
 
     
            
