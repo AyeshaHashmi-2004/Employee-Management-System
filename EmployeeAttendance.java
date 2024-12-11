@@ -15,7 +15,7 @@ import java.sql.*;
 
 public class EmployeeAttendance extends JFrame implements ActionListener {
 
-    private String dbUrl = "jdbc:mysql://localhost:3306/employee management system";  // Corrected database name format
+    private String dbUrl = "jdbc:mysql://localhost:3306/employee management system"; 
     private String dbUser = "root";
     private String dbPassword = "";
 
@@ -24,25 +24,43 @@ public class EmployeeAttendance extends JFrame implements ActionListener {
     private JButton submitButton;
     private JRadioButton presentButton, absentButton, halfDayButton, holidayButton;
     private ButtonGroup attendanceGroup;
-    private int currentEmployeeId; // Store the current employee ID for updates
+    private int currentEmployeeId;
+
+    // Factory class to create components
+    private static class ComponentFactory {
+        public static JLabel createStyledLabel(String text, int fontSize) {
+            JLabel label = new JLabel(text);
+            label.setFont(new Font("Arial", Font.BOLD, fontSize));
+            return label;
+        }
+
+        public static JTextField createStyledTextField() {
+            JTextField textField = new JTextField(15);
+            textField.setFont(new Font("Arial", Font.PLAIN, 14));
+            textField.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+            return textField;
+        }
+
+        public static JRadioButton createStyledRadioButton(String text) {
+            JRadioButton radioButton = new JRadioButton(text);
+            radioButton.setBackground(new Color(135, 206, 235)); // Sky blue background to match frame
+            radioButton.setFont(new Font("Arial", Font.PLAIN, 14));
+            return radioButton;
+        }
+    }
 
     public EmployeeAttendance() {
         super("Employee Attendance");
 
-        // Prompt user for Employee ID
-        String inputId = JOptionPane.showInputDialog(this, "Enter Employee ID:", "Input", JOptionPane.QUESTION_MESSAGE);
-        if (inputId == null || inputId.trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Employee ID is required. Exiting program.");
-            System.exit(0);
-        }
+        // Prompt user for employee ID
+        String input = JOptionPane.showInputDialog(this, "Enter Employee ID:");
         try {
-            currentEmployeeId = Integer.parseInt(inputId);
+            currentEmployeeId = Integer.parseInt(input);
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Invalid Employee ID format. Exiting program.");
+            JOptionPane.showMessageDialog(this, "Invalid Employee ID. Exiting application.");
             System.exit(0);
         }
 
-        // Set up frame
         setSize(500, 500);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new GridBagLayout());
@@ -54,8 +72,7 @@ public class EmployeeAttendance extends JFrame implements ActionListener {
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         // Title
-        titleLabel = new JLabel("Manage Employee Attendance", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        titleLabel = ComponentFactory.createStyledLabel("Manage Employee Attendance", 20);
         titleLabel.setForeground(new Color(25, 25, 112));
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -65,32 +82,29 @@ public class EmployeeAttendance extends JFrame implements ActionListener {
         gbc.gridwidth = 1;
 
         // Name field
-        nameLabel = new JLabel("Employee Name:");
-        nameLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        nameField = createStyledTextField();
+        nameLabel = ComponentFactory.createStyledLabel("Employee Name:", 14);
+        nameField = ComponentFactory.createStyledTextField();
         nameField.setEditable(false); // Make it read-only
         addComponent(gbc, nameLabel, nameField, 1);
 
         // Basic pay field
-        basicPayLabel = new JLabel("Basic Pay:");
-        basicPayLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        basicPayField = createStyledTextField();
+        basicPayLabel = ComponentFactory.createStyledLabel("Basic Pay:", 14);
+        basicPayField = ComponentFactory.createStyledTextField();
         basicPayField.setEditable(false); // Make it read-only
         addComponent(gbc, basicPayLabel, basicPayField, 2);
 
         // Attendance options
-        attendanceLabel = new JLabel("Attendance:");
-        attendanceLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        attendanceLabel = ComponentFactory.createStyledLabel("Attendance:", 14);
         gbc.gridy = 3;
         gbc.gridx = 0;
         gbc.anchor = GridBagConstraints.WEST;
         add(attendanceLabel, gbc);
 
         attendanceGroup = new ButtonGroup();
-        presentButton = createStyledRadioButton("Present");
-        absentButton = createStyledRadioButton("Absent");
-        halfDayButton = createStyledRadioButton("Half Day");
-        holidayButton = createStyledRadioButton("Holiday");
+        presentButton = ComponentFactory.createStyledRadioButton("Present");
+        absentButton = ComponentFactory.createStyledRadioButton("Absent");
+        halfDayButton = ComponentFactory.createStyledRadioButton("Half Day");
+        holidayButton = ComponentFactory.createStyledRadioButton("Holiday");
 
         attendanceGroup.add(presentButton);
         attendanceGroup.add(absentButton);
@@ -107,21 +121,18 @@ public class EmployeeAttendance extends JFrame implements ActionListener {
         add(attendancePanel, gbc);
 
         // Advance field
-        JLabel advanceLabel = new JLabel("Advance:");
-        advanceLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        advanceField = createStyledTextField();
+        JLabel advanceLabel = ComponentFactory.createStyledLabel("Advance:", 14);
+        advanceField = ComponentFactory.createStyledTextField();
         addComponent(gbc, advanceLabel, advanceField, 4);
 
         // Bonus field
-        JLabel bonusLabel = new JLabel("Bonus:");
-        bonusLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        bonusField = createStyledTextField();
+        JLabel bonusLabel = ComponentFactory.createStyledLabel("Bonus:", 14);
+        bonusField = ComponentFactory.createStyledTextField();
         addComponent(gbc, bonusLabel, bonusField, 5);
 
         // Today's payment field
-        todayPaymentLabel = new JLabel("Today's Payment:");
-        todayPaymentLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        todayPaymentField = createStyledTextField();
+        todayPaymentLabel = ComponentFactory.createStyledLabel("Today's Payment:", 14);
+        todayPaymentField = ComponentFactory.createStyledTextField();
         todayPaymentField.setEditable(false); // Make it read-only
         addComponent(gbc, todayPaymentLabel, todayPaymentField, 6);
 
@@ -145,20 +156,6 @@ public class EmployeeAttendance extends JFrame implements ActionListener {
         setVisible(true);
     }
 
-    private JTextField createStyledTextField() {
-        JTextField textField = new JTextField(15); // Set smaller size
-        textField.setFont(new Font("Arial", Font.PLAIN, 14));
-        textField.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
-        return textField;
-    }
-
-    private JRadioButton createStyledRadioButton(String text) {
-        JRadioButton radioButton = new JRadioButton(text);
-        radioButton.setBackground(new Color(135, 206, 235)); // Sky blue background to match frame
-        radioButton.setFont(new Font("Arial", Font.PLAIN, 14));
-        return radioButton;
-    }
-
     private void addComponent(GridBagConstraints gbc, JLabel label, JTextField field, int row) {
         gbc.gridy = row;
         gbc.gridx = 0;
@@ -179,7 +176,8 @@ public class EmployeeAttendance extends JFrame implements ActionListener {
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     nameField.setText(rs.getString("name"));
-                    basicPayField.setText(String.valueOf(rs.getDouble("basic_pay")));
+                    double basicPay = rs.getDouble("basic_pay");
+                    basicPayField.setText(String.valueOf(basicPay));
                 } else {
                     JOptionPane.showMessageDialog(this, "No employee found with ID: " + currentEmployeeId);
                     System.exit(0);
@@ -194,30 +192,52 @@ public class EmployeeAttendance extends JFrame implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == submitButton) {
-            try {
-                double todayPayment = calculateTodayPayment();
-                todayPaymentField.setText(String.format("%.2f", todayPayment));
-                updateAttendanceInDatabase(todayPayment);
-                JOptionPane.showMessageDialog(this, "Attendance submitted successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Please enter valid numeric values for Advance and Bonus.", "Input Error", JOptionPane.ERROR_MESSAGE);
-            }
+            // Calculate today's payment based on attendance
+            double todayPayment = calculateTodayPayment();
+
+            // Set the calculated payment to the Today's Payment field
+            todayPaymentField.setText(String.format("%.2f", todayPayment)); // Format to two decimal places
+
+            // Update the database with the attendance and payment
+            updateAttendanceInDatabase(todayPayment);
+
+            JOptionPane.showMessageDialog(this, "Attendance submitted successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
     private double calculateTodayPayment() {
+        // Parse the basic pay as a double instead of an integer
         double basicPay = Double.parseDouble(basicPayField.getText());
-        double advance = Double.parseDouble(advanceField.getText());
-        double bonus = Double.parseDouble(bonusField.getText());
+        double advance = 0;
+        double bonus = 0;
 
+        // Handle advance field input (allow floating-point values)
+        try {
+            advance = Double.parseDouble(advanceField.getText());
+        } catch (NumberFormatException e) {
+            // If invalid, leave advance as 0
+        }
+
+        // Handle bonus field input (allow floating-point values)
+        try {
+            bonus = Double.parseDouble(bonusField.getText());
+        } catch (NumberFormatException e) {
+            // If invalid, leave bonus as 0
+        }
+
+        // Initialize the payment with basic pay
         double todayPayment = basicPay;
+
+        // Adjust payment based on attendance type
         if (absentButton.isSelected()) {
             todayPayment = 0;
         } else if (halfDayButton.isSelected()) {
             todayPayment /= 2;
         }
 
+        // Add bonus and subtract advance
         todayPayment += bonus - advance;
+
         return todayPayment;
     }
 
@@ -242,15 +262,14 @@ public class EmployeeAttendance extends JFrame implements ActionListener {
             stmt.setDouble(3, todayPayment);
             stmt.setString(4, attendanceStatus);
             stmt.setDouble(5, todayPayment);
-
             stmt.executeUpdate();
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Error updating attendance: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error updating attendance data: " + e.getMessage());
         }
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(EmployeeAttendance::new);
+        // Start the application
+        new EmployeeAttendance();
     }
 }
-
