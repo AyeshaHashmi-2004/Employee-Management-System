@@ -117,73 +117,105 @@ public class Leave extends JFrame implements ActionListener {
         String startDate = startDateField.getText();
         String endDate = endDateField.getText();
 
-        // Validate fields
-        if (employeeId.isEmpty() || leaveType.isEmpty() || startDate.isEmpty() || endDate.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "All fields must be filled out.");
+        if (!validateInputs(employeeId, leaveType, startDate, endDate)) {
             return;
         }
 
-        // Validate Employee ID (must be an integer)
-        if (!isInteger(employeeId)) {
-            JOptionPane.showMessageDialog(this, "Employee ID must be an integer.");
-            return;
-        }
-
-        // Validate Leave Type (must contain only alphabets)
-        if (!leaveType.matches("[A-Za-z]+")) {
-            JOptionPane.showMessageDialog(this, "Leave Type must contain only alphabets.");
-            return;
-        }
-
-        // Validate Start and End Date (must be in YYYY-MM-DD format)
-        if (!isValidDate(startDate) || !isValidDate(endDate)) {
-            JOptionPane.showMessageDialog(this, "Dates must be in the format YYYY-MM-DD.");
-            return;
-        }
-
-        try (Connection conn = DriverManager.getConnection(dbURL, dbUser, dbPassword);
-             PreparedStatement stmt = conn.prepareStatement(
-                 "INSERT INTO leave_requests (employee_id, leave_type, start_date, end_date, status) VALUES (?, ?, ?, ?, ?)")) {
-            stmt.setInt(1, Integer.parseInt(employeeId)); 
-            stmt.setString(2, leaveType);
-            stmt.setString(3, startDate);
-            stmt.setString(4, endDate);
-            stmt.setString(5, "Pending"); 
-            stmt.executeUpdate();
-
-            JOptionPane.showMessageDialog(this, "Leave request submitted successfully.");
-        } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(this, "Error submitting leave request: " + ex.getMessage());
-            ex.printStackTrace();
-        }
+        new LeaveRequestThread(employeeId, leaveType, startDate, endDate).start();
     }
 
     private void viewLeaveBalance() {
         String employeeId = employeeIdField.getText();
-        
         if (employeeId.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Employee ID must be entered.");
             return;
         }
-        
-        try (Connection conn = DriverManager.getConnection(dbURL, dbUser, dbPassword);
-             PreparedStatement stmt = conn.prepareStatement(
-                 "SELECT remaining_leave FROM employees WHERE id = ?")) {
-            stmt.setInt(1, Integer.parseInt(employeeId)); 
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                int remainingLeave = rs.getInt("remaining_leave");
-                JOptionPane.showMessageDialog(this, "Remaining Leave: " + remainingLeave);
-            } else {
-                JOptionPane.showMessageDialog(this, "Employee not found.");
+
+        new LeaveBalanceThread(employeeId).start();
+    }
+
+    private boolean validateInputs(String employeeId, String leaveType, String startDate, String endDate) {
+        if (employeeId.isEmpty() || leaveType.isEmpty() || startDate.isEmpty() || endDate.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "All fields must be filled out.");
+            return false;
+        }
+
+        if (!isInteger(employeeId)) {
+            JOptionPane.showMessageDialog(this, "Employee ID must be an integer.");
+            return false;
+        }
+
+        if (!leaveType.matches("[A-Za-z]+")) {
+            JOptionPane.showMessageDialog(this, "Leave Type must contain only alphabets.");
+            return false;
+        }
+
+        if (!isValidDate(startDate) || !isValidDate(endDate)) {
+            JOptionPane.showMessageDialog(this, "Dates must be in the format YYYY-MM-DD.");
+            return false;
+        }
+
+        return true;
+    }
+
+    // Thread for submitting leave requests
+    class LeaveRequestThread extends Thread {
+        private String employeeId, leaveType, startDate, endDate;
+
+        public LeaveRequestThread(String employeeId, String leaveType, String startDate, String endDate) {
+            this.employeeId = employeeId;
+            this.leaveType = leaveType;
+            this.startDate = startDate;
+            this.endDate = endDate;
+        }
+
+        @Override
+        public void run() {
+            try (Connection conn = DriverManager.getConnection(dbURL, dbUser, dbPassword);
+                 PreparedStatement stmt = conn.prepareStatement(
+                     "INSERT INTO leave_requests (employee_id, leave_type, start_date, end_date, status) VALUES (?, ?, ?, ?, ?)")) {
+                stmt.setInt(1, Integer.parseInt(employeeId));
+                stmt.setString(2, leaveType);
+                stmt.setString(3, startDate);
+                stmt.setString(4, endDate);
+                stmt.setString(5, "Pending");
+                stmt.executeUpdate();
+                JOptionPane.showMessageDialog(Leave.this, "Leave request submitted successfully.");
+                JOptionPane.showMessageDialog(Leave.this, "Thread run successfully!");
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(Leave.this, "Error: " + ex.getMessage());
             }
-        } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(this, "Error retrieving leave balance: " + ex.getMessage());
-            ex.printStackTrace();
         }
     }
 
-    // Helper function to check if a string is a valid integer
+    // Thread for viewing leave balance
+    class LeaveBalanceThread extends Thread {
+        private String employeeId;
+
+        public LeaveBalanceThread(String employeeId) {
+            this.employeeId = employeeId;
+        }
+
+        @Override
+        public void run() {
+            try (Connection conn = DriverManager.getConnection(dbURL, dbUser, dbPassword);
+                 PreparedStatement stmt = conn.prepareStatement(
+                     "SELECT remaining_leave FROM employees WHERE id = ?")) {
+                stmt.setInt(1, Integer.parseInt(employeeId));
+                ResultSet rs = stmt.executeQuery();
+                if (rs.next()) {
+                    int remainingLeave = rs.getInt("remaining_leave");
+                    JOptionPane.showMessageDialog(Leave.this, "Remaining Leave: " + remainingLeave);
+                } else {
+                    JOptionPane.showMessageDialog(Leave.this, "Employee not found.");
+                }
+                JOptionPane.showMessageDialog(Leave.this, "Thread run successfully!");
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(Leave.this, "Error: " + ex.getMessage());
+            }
+        }
+    }
+
     private boolean isInteger(String str) {
         try {
             Integer.parseInt(str);
@@ -193,28 +225,11 @@ public class Leave extends JFrame implements ActionListener {
         }
     }
 
-    // Helper function to validate date format (YYYY-MM-DD)
     private boolean isValidDate(String date) {
-        String regex = "^\\d{4}-\\d{2}-\\d{2}$";  // Regex for YYYY-MM-DD format
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(date);
-        return matcher.matches();
+        return date.matches("^\\d{4}-\\d{2}-\\d{2}$");
     }
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(Leave::new);
     }
-}
-
-   
-       
-      
-        
-       
-        
-        
-       
-        
-   
-              
 }
